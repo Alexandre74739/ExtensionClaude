@@ -1,3 +1,184 @@
+/* Éléments de Claude masqués par la recherche ou par un dossier parent replié */
+[data-cf-search-hidden],
+[data-cf-collapsed-parent] {
+  display: none !important;
+}
+
+/* Sous-dossier : collé à son parent (sans l'espace entre dossiers de Claude). Le retrait
+   et les lignes de rattachement (une par dossier ancêtre) sont posés par content.js */
+[data-cf-depth]:not([data-cf-depth="0"]) {
+  --cf-guide-color: color-mix(in srgb, currentColor 13%, transparent);
+  margin-top: 0 !important;
+}
+/* Survol : les lignes du sous-dossier s'accentuent pour montrer à quoi il est rattaché */
+[data-cf-depth]:not([data-cf-depth="0"]):hover {
+  --cf-guide-color: color-mix(in srgb, currentColor 32%, transparent);
+}
+
+/* ---------- barre de recherche ---------- */
+
+#cf-search {
+  margin: 6px 8px 8px;
+  color: inherit;
+  font-size: 13px;
+}
+.cf-search-box {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 4px 0 10px;
+  border: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, currentColor 4%, transparent);
+  transition: border-color 0.15s;
+}
+.cf-search-box:focus-within {
+  border-color: color-mix(in srgb, currentColor 35%, transparent);
+}
+.cf-search-icon {
+  display: inline-flex;
+  flex: none;
+  width: 14px;
+  height: 14px;
+  opacity: 0.55;
+}
+.cf-search-field {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+}
+/* Suite grisée de l'autocomplétion, placée exactement sous le texte tapé */
+.cf-search-ghost,
+.cf-search-input {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  font: inherit;
+  letter-spacing: inherit;
+  line-height: 30px;
+}
+.cf-search-ghost {
+  overflow: hidden;
+  white-space: pre;
+  pointer-events: none;
+}
+.cf-ghost-typed {
+  visibility: hidden;
+}
+.cf-ghost-rest {
+  opacity: 0.4;
+}
+.cf-search-input {
+  width: 100%;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: inherit;
+}
+.cf-search-input::placeholder {
+  color: inherit;
+  opacity: 0.5;
+}
+.cf-search-clear {
+  display: none;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: inherit;
+  font-size: 16px;
+  line-height: 1;
+  opacity: 0.55;
+  cursor: pointer;
+}
+.cf-search-clear:hover {
+  opacity: 1;
+  background: color-mix(in srgb, currentColor 10%, transparent);
+}
+#cf-search.cf-has-query .cf-search-clear {
+  display: inline-block;
+}
+
+/* Suggestion en cours : type, nom ou chemin, raccourcis */
+.cf-search-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 4px 0;
+  font-size: 12px;
+}
+.cf-search-hint:empty,
+.cf-search-status:empty {
+  display: none;
+}
+.cf-hint-icon {
+  display: inline-flex;
+  flex: none;
+  width: 13px;
+  height: 13px;
+}
+.cf-hint-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.cf-hint-count {
+  flex: none;
+  opacity: 0.55;
+}
+.cf-search-hint kbd {
+  flex: none;
+  padding: 0 4px;
+  border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+  border-radius: 4px;
+  font:
+    10.5px/16px ui-monospace,
+    Consolas,
+    monospace;
+  opacity: 0.7;
+}
+.cf-search-status {
+  padding: 4px 4px 0;
+  font-size: 11.5px;
+  opacity: 0.65;
+}
+.cf-search-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+::highlight(cf-search) {
+  background-color: rgba(255, 197, 61, 0.45);
+  color: inherit;
+}
+
+/* Dossier atteint avec Entrée : bref surlignage */
+[data-cf-flash] {
+  animation: cf-flash 1.5s ease-out;
+  border-radius: 8px;
+}
+@keyframes cf-flash {
+  0%,
+  35% {
+    background-color: color-mix(in srgb, currentColor 16%, transparent);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
 /* ---------- icône de couleur dans l'en-tête d'un dossier ---------- */
 
 .cf-group-icon {
@@ -30,6 +211,33 @@
 }
 .cf-color-field.cf-in-claude {
   margin: 12px 0 4px;
+}
+
+/* Choix du dossier parent dans la fenêtre de création / renommage de Claude */
+.cf-parent-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 4px;
+  font-size: 13px;
+}
+.cf-parent-field > span {
+  flex: none;
+  opacity: 0.75;
+}
+.cf-parent-select {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+.cf-parent-select option {
+  background: Canvas;
+  color: CanvasText;
 }
 .cf-swatches {
   display: flex;
@@ -171,6 +379,47 @@
   font-family: ui-monospace, Consolas, monospace;
   font-size: 11px;
   white-space: pre;
+}
+
+/* Liste « Placer dans… » */
+.cf-options {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+.cf-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--cf-fg);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.cf-option:hover {
+  background: var(--cf-hover);
+}
+.cf-option.cf-selected {
+  background: var(--cf-hover);
+  font-weight: 600;
+}
+.cf-option-icon {
+  display: inline-flex;
+  flex: none;
+  width: 15px;
+  height: 15px;
+}
+.cf-option-label {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .cf-actions {

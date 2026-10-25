@@ -54,13 +54,33 @@
       #status {
         margin: 10px 0 0;
       }
+      .secondary {
+        margin-top: 6px;
+        border: 1px solid color-mix(in srgb, var(--fg) 20%, transparent);
+        background: none;
+        color: var(--fg);
+      }
+      #output {
+        width: 100%;
+        height: 140px;
+        margin-top: 8px;
+        box-sizing: border-box;
+        font:
+          10px ui-monospace,
+          Consolas,
+          monospace;
+      }
     </style>
   </head>
   <body>
     <h1>Claude Folders</h1>
     <p>Les groupes de Claude s'affichent comme des dossiers.</p>
-    <button id="diagnostic" type="button">Ouvrir le diagnostic</button>
+    <button id="copy" type="button">Copier le diagnostic</button>
+    <button id="open" class="secondary" type="button">
+      Afficher le diagnostic
+    </button>
     <p id="status"></p>
+    <textarea id="output" readonly hidden></textarea>
     <script src="popup.js"></script>
   </body>
 </html>

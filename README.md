@@ -8,7 +8,18 @@ Extension de navigateur pour [claude.ai](https://claude.ai) qui affiche les **gr
 - Le contenu des conversations n'est jamais modifié, ni les titres de chats
 - Les dossiers restent des groupes Claude : ils sont enregistrés dans ton compte Claude et visibles partout (mobile, autres navigateurs). Les **couleurs** sont enregistrées par l'extension et synchronisées via le compte du navigateur : elles n'apparaissent qu'avec l'extension.
 
-À venir : sous-dossiers.
+- **Sous-dossiers** : ⋯ du dossier → **Placer dans le dossier…**, ou choix « Dans le dossier » à la création. Le sous-dossier s'affiche décalé sous son parent et se masque quand le parent est replié. Claude ne gère pas les sous-groupes : l'imbrication n'est visible qu'avec l'extension.
+- **Recherche** au-dessus des dossiers : filtre en direct les dossiers, sous-dossiers et chats (sans tenir compte des accents ni des majuscules).
+
+| Touche | Effet |
+| --- | --- |
+| `Tab` maintenu + `A` | Complète avec la suggestion affichée en gris |
+| `Tab` seul | Navigation habituelle |
+| `↑` / `↓` | Suggestion précédente / suivante |
+| `Entrée` | Ouvre le chat, ou affiche et ouvre le dossier (sans ouvrir de chat) |
+| `Échap` | Efface la recherche |
+
+La recherche ne voit que les chats chargés dans la barre latérale ; pour les plus anciens, le lien « Ouvrir la recherche de Claude » apparaît quand rien n'est trouvé.
 
 Compatible Chrome, Edge, Brave et Firefox (121+). Manifest V3, aucune dépendance, pas d'étape de build.
 
@@ -28,12 +39,13 @@ Compatible Chrome, Edge, Brave et Firefox (121+). Manifest V3, aucune dépendanc
 
 ## Diagnostic
 
-Si l'affichage ne correspond pas à l'interface actuelle de Claude : bouton de l'extension dans la barre du navigateur → **Ouvrir le diagnostic** → **Copier**. Le texte décrit la structure de la barre latérale et des menus, avec les titres de chats masqués.
+Si l'affichage ne correspond pas à l'interface actuelle de Claude : bouton de l'extension dans la barre du navigateur → **Copier le diagnostic** (ou **Afficher le diagnostic** pour le lire avant). Le texte décrit la structure de la barre latérale et des menus, avec les titres de chats masqués.
 
 ## Limites
 
 - L'extension modifie l'affichage de claude.ai. Si Anthropic change son interface, il faudra peut-être adapter [src/content.js](src/content.js).
 - Un dossier dont tu as toi-même mis « groupe » dans le nom l'affichera « dossier ».
+- Les couleurs et sous-dossiers sont liés à l'identifiant Claude de chaque dossier : ils survivent à un renommage. Un sous-dossier s'affiche après les chats de son parent (Claude place chaque dossier dans un bloc séparé).
 
 ## Structure
 
