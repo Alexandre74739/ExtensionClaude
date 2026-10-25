@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <title>Claude Folders</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --fg: #1f1e1d;
+        --muted: #73726c;
+        --bg: #ffffff;
+        --primary: #c96442;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --fg: #f3f2ee;
+          --muted: #a6a49c;
+          --bg: #2a2926;
+          --primary: #d97757;
+        }
+      }
+      body {
+        width: 260px;
+        margin: 0;
+        padding: 14px;
+        background: var(--bg);
+        color: var(--fg);
+        font:
+          14px system-ui,
+          sans-serif;
+      }
+      h1 {
+        margin: 0 0 4px;
+        font-size: 15px;
+      }
+      p {
+        margin: 0 0 12px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      button {
+        width: 100%;
+        padding: 8px;
+        border: 0;
+        border-radius: 8px;
+        background: var(--primary);
+        color: #fff;
+        font: inherit;
+        cursor: pointer;
+      }
+      button:hover {
+        filter: brightness(1.08);
+      }
+      #status {
+        margin: 10px 0 0;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Claude Folders</h1>
+    <p>Les groupes de Claude s'affichent comme des dossiers.</p>
+    <button id="diagnostic" type="button">Ouvrir le diagnostic</button>
+    <p id="status"></p>
+    <script src="popup.js"></script>
+  </body>
+</html>

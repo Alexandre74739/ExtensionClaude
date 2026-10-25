@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "Claude Folders",
+  "version": "2.0.0",
+  "description": "Affiche les groupes de claude.ai comme des dossiers.",
+  "permissions": ["storage"],
+  "host_permissions": ["https://claude.ai/*"],
+  "action": {
+    "default_title": "Claude Folders",
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://claude.ai/*"],
+      "js": ["src/content.js"],
+      "css": ["src/content.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "claude-folders@alexandre74739",
+      "strict_min_version": "121.0",
+      "data_collection_permissions": { "required": ["none"] }
+    }
+  }
+}

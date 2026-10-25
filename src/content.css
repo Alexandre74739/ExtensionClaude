@@ -1,0 +1,201 @@
+/* ---------- icône de couleur dans l'en-tête d'un dossier ---------- */
+
+.cf-group-icon {
+  display: inline-flex;
+  flex: none;
+  width: 15px;
+  height: 15px;
+  margin-inline-end: 6px;
+  vertical-align: -3px;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+.cf-group-icon:hover {
+  transform: scale(1.15);
+}
+
+/* Icône de l'entrée « Couleur du dossier… » dans le menu de Claude */
+.cf-menu-icon {
+  display: inline-flex;
+  width: 0.85em;
+  height: 0.85em;
+}
+
+/* ---------- sélecteur de couleur (notre fenêtre et celle de Claude) ---------- */
+
+.cf-color-field {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.cf-color-field.cf-in-claude {
+  margin: 12px 0 4px;
+}
+.cf-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.cf-swatch {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.cf-swatch.cf-selected {
+  box-shadow:
+    0 0 0 2px var(--cf-bg, Canvas),
+    0 0 0 4px currentColor;
+}
+.cf-hex-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.cf-preview {
+  display: inline-flex;
+  width: 26px;
+  height: 26px;
+}
+.cf-hex {
+  width: 100px;
+  padding: 6px 8px;
+  border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+  border-radius: 8px;
+  outline: none;
+  background: transparent;
+  color: inherit;
+  font:
+    13px ui-monospace,
+    Consolas,
+    monospace;
+  text-transform: lowercase;
+}
+.cf-hex:focus {
+  border-color: color-mix(in srgb, currentColor 50%, transparent);
+}
+.cf-hex.cf-invalid {
+  border-color: #e5484d;
+}
+.cf-picker {
+  width: 32px;
+  height: 32px;
+  padding: 2px;
+  border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+}
+
+/* ---------- nos fenêtres (ajoutées hors de l'interface de Claude, d'où leur propre thème) ---------- */
+
+.cf-theme-light {
+  --cf-bg: #ffffff;
+  --cf-fg: #1f1e1d;
+  --cf-muted: #73726c;
+  --cf-border: rgba(0, 0, 0, 0.12);
+  --cf-hover: rgba(0, 0, 0, 0.06);
+  --cf-input: #f7f6f3;
+  --cf-primary: #c96442;
+}
+.cf-theme-dark {
+  --cf-bg: #2a2926;
+  --cf-fg: #f3f2ee;
+  --cf-muted: #a6a49c;
+  --cf-border: rgba(255, 255, 255, 0.12);
+  --cf-hover: rgba(255, 255, 255, 0.08);
+  --cf-input: #1f1e1c;
+  --cf-primary: #d97757;
+}
+
+.cf-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.4);
+  /* Claude bloque les clics sur la page pendant la fermeture de ses menus */
+  pointer-events: auto;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--cf-fg);
+}
+.cf-overlay * {
+  box-sizing: border-box;
+}
+
+.cf-dialog {
+  width: 640px;
+  max-width: 100%;
+  padding: 20px;
+  border: 1px solid var(--cf-border);
+  border-radius: 14px;
+  background: var(--cf-bg);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.3);
+}
+.cf-dialog.cf-dialog-small {
+  width: 340px;
+}
+.cf-dialog-title {
+  margin-bottom: 10px;
+  font-size: 16px;
+  font-weight: 600;
+}
+.cf-hint {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: var(--cf-muted);
+}
+
+.cf-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--cf-border);
+  border-radius: 8px;
+  outline: none;
+  background: var(--cf-input);
+  color: var(--cf-fg);
+  font: inherit;
+}
+.cf-input:focus {
+  border-color: var(--cf-primary);
+}
+.cf-input.cf-diag {
+  height: 320px;
+  resize: vertical;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 11px;
+  white-space: pre;
+}
+
+.cf-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+.cf-btn {
+  padding: 8px 14px;
+  border: 1px solid var(--cf-border);
+  border-radius: 8px;
+  background: none;
+  color: var(--cf-fg);
+  font: inherit;
+  cursor: pointer;
+}
+.cf-btn:hover {
+  background: var(--cf-hover);
+}
+.cf-btn.cf-primary {
+  border-color: var(--cf-primary);
+  background: var(--cf-primary);
+  color: #fff;
+}
+.cf-btn.cf-primary:hover {
+  filter: brightness(1.08);
+}
