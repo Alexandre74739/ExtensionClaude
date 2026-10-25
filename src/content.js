@@ -790,6 +790,150 @@ const ext = globalThis.browser ?? globalThis.chrome;
     });
   }
 
+  // ---------- glisser un dossier sur un autre : il devient son sous-dossier ----------
+
+  // Observation passive des événements : le glisser de Claude (réordonner les dossiers)
+  // n'est pas bloqué, on regarde seulement où le dossier est lâché
+  const DRAG_THRESHOLD = 6;
+  const ROOT_SECTION = /^(sans dossier|sans groupe|ungrouped|no folder)$/i;
+  let folderDrag = null; // { group, x, y, active, html5, target }
+  let dropHighlight = null;
+  const dropTip = h("div", { class: "cf-drop-tip", role: "status" });
+
+  // Toute la ligne de l'en-tête (zone de dépôt la plus large possible)
+  const headerBox = (el) =>
+    el.closest('[data-row-key^="label:"]') ||
+    el.closest("[data-sidebar-group-label]") ||
+    el;
+
+  function within(el, x, y) {
+    const r = el.getBoundingClientRect();
+    return (
+      r.width > 0 && x >= r.left && x < r.right && y >= r.top && y < r.bottom
+    );
+  }
+
+  // En-tête d'un autre dossier sous le pointeur, ou « Sans dossier » (= remettre à la racine)
+  function folderDropTarget(x, y) {
+    for (const g of currentGroups) {
+      if (g.key === folderDrag.group.key) continue;
+      const el = headerBox(g.row);
+      if (within(el, x, y)) return { group: g, el };
+    }
+    const root = lastLayout?.sections.find(
+      (s) => !s.group && ROOT_SECTION.test(s.label),
+    );
+    const el = root && headerBox(root.header.el);
+    return el && within(el, x, y) ? { group: null, el } : null;
+  }
+
+  const canDropOn = (source, target) =>
+    target
+      ? !isInside(target.key, source.key) && parents[source.key] !== target.key
+      : !!parents[source.key];
+
+  function setDropHighlight(el) {
+    if (dropHighlight === el) return;
+    dropHighlight?.removeAttribute("data-cf-drop-target");
+    el?.setAttribute("data-cf-drop-target", "");
+    dropHighlight = el;
+  }
+
+  function moveFolderDrag(x, y) {
+    if (!folderDrag) return;
+    if (!folderDrag.active) {
+      if (Math.hypot(x - folderDrag.x, y - folderDrag.y) < DRAG_THRESHOLD)
+        return;
+      folderDrag.active = true;
+    }
+    const target = folderDropTarget(x, y);
+    folderDrag.target =
+      target && canDropOn(folderDrag.group, target.group) ? target : null;
+    setDropHighlight(folderDrag.target?.el || null);
+    if (!folderDrag.target) return dropTip.remove();
+    dropTip.className = `cf-drop-tip ${themeClass()}`;
+    const { group } = folderDrag.target;
+    if (group)
+      dropTip.replaceChildren(
+        folderIcon("cf-hint-icon", colors[group.key] || NO_COLOR),
+        `Placer dans « ${group.name} »`,
+      );
+    else dropTip.replaceChildren("Sortir du dossier");
+    dropTip.style.transform = `translate(${x + 14}px, ${y + 14}px)`;
+    if (!dropTip.isConnected) document.body.append(dropTip);
+  }
+
+  function endFolderDrag(drop) {
+    const drag = folderDrag;
+    folderDrag = null;
+    setDropHighlight(null);
+    dropTip.remove();
+    if (!drop || !drag?.active || !drag.target) return;
+    const parent = drag.target.group?.key ?? null;
+    if (setParent(drag.group.key, parent))
+      log(
+        "dossier glissé :",
+        drag.group.key.split(":")[0],
+        "→",
+        parent ? "sous-dossier" : "racine",
+      );
+  }
+
+  addEventListener(
+    "pointerdown",
+    (e) => {
+      folderDrag = null;
+      if (e.button !== 0 || !(e.target instanceof Element)) return;
+      if (e.target.closest(".cf-group-icon, [aria-haspopup], #cf-search"))
+        return;
+      const group = currentGroups.find((g) =>
+        headerBox(g.row).contains(e.target),
+      );
+      if (group)
+        folderDrag = {
+          group,
+          x: e.clientX,
+          y: e.clientY,
+          active: false,
+          html5: false,
+          target: null,
+        };
+    },
+    true,
+  );
+  addEventListener(
+    "pointermove",
+    (e) => moveFolderDrag(e.clientX, e.clientY),
+    true,
+  );
+  // Si Claude utilise le glisser HTML5, les événements pointeur s'arrêtent : on suit dragover
+  addEventListener(
+    "dragstart",
+    () => folderDrag && (folderDrag.html5 = true),
+    true,
+  );
+  addEventListener(
+    "dragover",
+    (e) => moveFolderDrag(e.clientX, e.clientY),
+    true,
+  );
+  addEventListener(
+    "pointerup",
+    () => folderDrag && !folderDrag.html5 && endFolderDrag(true),
+    true,
+  );
+  addEventListener("dragend", () => folderDrag && endFolderDrag(true), true);
+  addEventListener(
+    "pointercancel",
+    () => folderDrag && !folderDrag.html5 && endFolderDrag(false),
+    true,
+  );
+  addEventListener(
+    "keydown",
+    (e) => e.key === "Escape" && folderDrag && endFolderDrag(false),
+    true,
+  );
+
   // ---------- barre de recherche ----------
 
   const searchInput = h("input", {
@@ -805,6 +949,7 @@ const ext = globalThis.browser ?? globalThis.chrome;
   const ghostRest = h("span", { class: "cf-ghost-rest" });
   const hintEl = h("div", { class: "cf-search-hint" });
   const statusEl = h("div", { class: "cf-search-status" });
+  const olderEl = h("div", { class: "cf-search-older" }); // chats que la barre latérale n'a pas chargés
   const search = h(
     "div",
     { id: "cf-search" },
@@ -840,6 +985,7 @@ const ext = globalThis.browser ?? globalThis.chrome;
     ),
     hintEl,
     statusEl,
+    olderEl,
   );
   // Les gestionnaires de la barre latérale (glisser, focus) ne doivent pas réagir
   for (const type of ["pointerdown", "mousedown", "click"])
@@ -867,6 +1013,86 @@ const ext = globalThis.browser ?? globalThis.chrome;
     }
   }
 
+  // ---------- tous les chats, y compris ceux que la barre latérale n'a pas chargés ----------
+
+  // Claude ne charge que les chats récents dans la barre latérale : la liste complète vient
+  // de l'API interne de claude.ai (celle qu'utilise la page, avec la session de l'utilisateur).
+  // Elle n'est pas documentée : en cas d'échec, la recherche reste limitée aux chats chargés.
+  const ALL_CHATS_TTL = 5 * 60000;
+  let allChats = null; // [{ id, title, n, updatedAt, groupKey }]
+  let allChatsAt = 0;
+  let allChatsLoading = null;
+  let allChatsInfo = "pas encore chargés";
+
+  // Firefox : content.fetch fait la requête au nom de la page (avec ses cookies)
+  const pageFetch = (url) =>
+    (globalThis.content?.fetch ?? fetch)(url, {
+      credentials: "include",
+      headers: { accept: "application/json" },
+    });
+
+  async function organizationId() {
+    const fromCookie = document.cookie.match(
+      /(?:^|;\s*)lastActiveOrg=([^;]+)/,
+    )?.[1];
+    if (fromCookie) return decodeURIComponent(fromCookie);
+    const orgs = await (await pageFetch("/api/organizations")).json();
+    return (orgs.find((o) => o.capabilities?.includes("chat")) || orgs[0])
+      ?.uuid;
+  }
+
+  function loadAllChats() {
+    if (allChats && Date.now() - allChatsAt < ALL_CHATS_TTL)
+      return Promise.resolve(allChats);
+    allChatsLoading ??= (async () => {
+      try {
+        const org = await organizationId();
+        const res = await pageFetch(
+          `/api/organizations/${org}/chat_conversations`,
+        );
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const body = await res.json();
+        const list = Array.isArray(body)
+          ? body
+          : body.data || body.conversations || [];
+        allChats = list
+          .filter((c) => c.uuid && c.name)
+          .map((c) => {
+            // Dossier du chat, si l'API l'indique (champ contenant « group » et un id « cg-… »)
+            const groupId = Object.entries(c).find(
+              ([k, v]) => /group/i.test(k) && typeof v === "string" && v,
+            )?.[1];
+            return {
+              id: c.uuid,
+              title: c.name,
+              n: norm(c.name),
+              updatedAt: c.updated_at || c.created_at,
+              groupKey: groupId ? `group:${groupId}` : null,
+            };
+          });
+        allChatsAt = Date.now();
+        allChatsInfo = `${allChats.length} chats, champs : ${Object.keys(list[0] || {}).join(",")}`;
+        log("anciens chats chargés :", allChats.length);
+      } catch (err) {
+        allChatsInfo = `échec : ${err.message}`;
+        log("chargement des anciens chats impossible :", err.message);
+      } finally {
+        allChatsLoading = null;
+      }
+      return allChats;
+    })();
+    return allChatsLoading;
+  }
+
+  const shortDate = (iso) =>
+    iso
+      ? new Date(iso).toLocaleDateString("fr-FR", {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        })
+      : "";
+
   function collectItems(layout) {
     const items = currentGroups.map((g) => ({
       type: "folder",
@@ -888,6 +1114,22 @@ const ext = globalThis.browser ?? globalThis.chrome;
           path: s.group ? pathOf(s.group.key) : "",
         });
       }
+    // Chats absents de la barre latérale (plus anciens, ou dans un dossier pas encore chargé)
+    const groupKeys = new Set(currentGroups.map((g) => g.key));
+    for (const c of allChats || []) {
+      if (seen.has(c.id)) continue;
+      const folderKey = groupKeys.has(c.groupKey) ? c.groupKey : null;
+      items.push({
+        type: "chat",
+        id: c.id,
+        label: c.title,
+        n: c.n,
+        folderKey,
+        path: folderKey ? pathOf(folderKey) : "",
+        older: true,
+        updatedAt: c.updatedAt,
+      });
+    }
     return items;
   }
 
@@ -895,7 +1137,7 @@ const ext = globalThis.browser ?? globalThis.chrome;
   function rankItems(items, q) {
     const scored = [];
     for (const it of items) {
-      const n = norm(it.label);
+      const n = it.n ?? norm(it.label);
       const i = n.indexOf(q);
       if (i < 0) continue;
       const score = i === 0 ? 0 : /[\s\-_'’«(]/.test(n[i - 1]) ? 1 : 2;
@@ -907,7 +1149,39 @@ const ext = globalThis.browser ?? globalThis.chrome;
         (a.it.type === b.it.type ? 0 : a.it.type === "folder" ? -1 : 1) ||
         a.it.label.length - b.it.label.length,
     );
-    return scored.slice(0, 20).map((s) => s.it);
+    return scored.map((s) => s.it);
+  }
+
+  // Liste « Chats plus anciens » sous la recherche
+  function renderOlder(older) {
+    if (!older.length) return olderEl.replaceChildren();
+    const MAX = 8;
+    const rows = [
+      h("div", { class: "cf-older-title", text: "Chats plus anciens" }),
+      ...older.slice(0, MAX).map((it) =>
+        h(
+          "button",
+          {
+            type: "button",
+            class: "cf-older-item",
+            title: it.path ? `${it.label} — ${it.path}` : it.label,
+            "data-id": it.id,
+            onclick: () => goTo(it),
+          },
+          svgIcon("cf-hint-icon", CHAT_SVG),
+          h("span", { class: "cf-older-label", text: it.label }),
+          h("span", { class: "cf-older-date", text: shortDate(it.updatedAt) }),
+        ),
+      ),
+    ];
+    if (older.length > MAX)
+      rows.push(
+        h("div", {
+          class: "cf-older-more",
+          text: `+ ${older.length - MAX} autre${older.length - MAX > 1 ? "s" : ""} (affine la recherche)`,
+        }),
+      );
+    olderEl.replaceChildren(...rows);
   }
 
   function addRanges(root, q, ranges) {
@@ -939,6 +1213,7 @@ const ext = globalThis.browser ?? globalThis.chrome;
       suggestions = [];
       renderSuggestion();
       statusEl.replaceChildren();
+      olderEl.replaceChildren();
       return;
     }
 
@@ -987,6 +1262,17 @@ const ext = globalThis.browser ?? globalThis.chrome;
       if (!visible.has(s))
         for (const u of s.units) u.setAttribute("data-cf-search-hidden", "");
 
+    const previous = suggestions[selIndex];
+    suggestions = rankItems(collectItems(layout), q);
+    const older = suggestions.filter((it) => it.older);
+    renderOlder(older);
+    addRanges(olderEl, q, ranges);
+    const kept = previous
+      ? suggestions.findIndex((s) => itemId(s) === itemId(previous))
+      : -1;
+    selIndex = kept >= 0 ? kept : 0;
+    renderSuggestion();
+
     if (
       ranges.length &&
       globalThis.CSS?.highlights &&
@@ -994,20 +1280,19 @@ const ext = globalThis.browser ?? globalThis.chrome;
     )
       CSS.highlights.set("cf-search", new Highlight(...ranges));
 
-    const previous = suggestions[selIndex];
-    suggestions = rankItems(collectItems(layout), q);
-    const kept = previous
-      ? suggestions.findIndex((s) => itemId(s) === itemId(previous))
-      : -1;
-    selIndex = kept >= 0 ? kept : 0;
-    renderSuggestion();
-
-    const total = foundFolders + foundChats.size;
+    const total = foundFolders + foundChats.size + older.length;
+    const loading = allChatsLoading ? " · chargement des anciens chats…" : "";
     if (total)
-      statusEl.replaceChildren(`${total} résultat${total > 1 ? "s" : ""}`);
+      statusEl.replaceChildren(
+        `${total} résultat${total > 1 ? "s" : ""}${loading}`,
+      );
+    else if (loading)
+      statusEl.replaceChildren("Recherche dans les anciens chats…");
     else
       statusEl.replaceChildren(
-        "Aucun résultat dans les chats chargés. ",
+        allChats
+          ? "Aucun résultat. "
+          : "Aucun résultat dans les chats chargés. ",
         h("button", {
           type: "button",
           class: "cf-search-link",
@@ -1062,6 +1347,12 @@ const ext = globalThis.browser ?? globalThis.chrome;
       h("kbd", { text: "Tab+A" }),
       h("kbd", { text: "Entrée" }),
     );
+    // La suggestion en cours est aussi marquée dans la liste des anciens chats
+    for (const b of olderEl.querySelectorAll(".cf-older-item"))
+      b.classList.toggle(
+        "cf-selected",
+        it.type === "chat" && b.dataset.id === it.id,
+      );
   }
 
   function runSearch() {
@@ -1085,6 +1376,7 @@ const ext = globalThis.browser ?? globalThis.chrome;
     search.classList.remove("cf-has-query");
     renderSuggestion();
     statusEl.replaceChildren();
+    olderEl.replaceChildren();
     // Referme ce que la recherche avait ouvert
     const layout = computeLayout();
     if (layout)
@@ -1223,6 +1515,12 @@ const ext = globalThis.browser ?? globalThis.chrome;
   searchInput.addEventListener("input", () => {
     selIndex = 0;
     runSearch();
+  });
+  // La liste complète des chats est chargée dès que la recherche est utilisée
+  searchInput.addEventListener("focus", () => {
+    const loaded = loadAllChats();
+    if (allChatsLoading)
+      loaded.then(() => searchInput.value.trim() && runSearch());
   });
   // Déplacer le curseur change l'affichage de la suite grisée
   searchInput.addEventListener("keyup", renderSuggestion);
@@ -1816,6 +2114,7 @@ const ext = globalThis.browser ?? globalThis.chrome;
           `  ${s.group ? "dossier" : `« ${s.label} »`} unités=${s.units.length} chats=${chatsOf(s).length} replié=${isCollapsed(s)}`,
       ) || []),
       `Recherche affichée : ${search.isConnected}`,
+      `Anciens chats (API) : ${allChatsInfo}`,
       ...(layout ? layoutDetails(layout) : []),
       ...titleDetails(),
       "",

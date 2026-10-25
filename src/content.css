@@ -164,6 +164,86 @@
   color: inherit;
 }
 
+/* Chats que la barre latérale n'a pas chargés (plus anciens) */
+.cf-search-older:empty {
+  display: none;
+}
+.cf-search-older {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid color-mix(in srgb, currentColor 10%, transparent);
+}
+.cf-older-title {
+  padding: 0 4px 4px;
+  font-size: 11.5px;
+  opacity: 0.6;
+}
+.cf-older-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 30px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.cf-older-item:hover,
+.cf-older-item.cf-selected {
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
+.cf-older-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.cf-older-date {
+  flex: none;
+  font-size: 11px;
+  opacity: 0.5;
+}
+.cf-older-more {
+  padding: 4px 6px 0;
+  font-size: 11.5px;
+  opacity: 0.55;
+}
+
+/* Glisser un dossier sur un autre : en-tête visé et étiquette qui suit le pointeur */
+[data-cf-drop-target] {
+  border-radius: 8px;
+  outline: 2px dashed #d97757;
+  outline-offset: -2px;
+  background-color: rgba(217, 119, 87, 0.1) !important;
+}
+.cf-drop-tip {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 2147483647;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 260px;
+  padding: 5px 10px;
+  border: 1px solid var(--cf-border);
+  border-radius: 8px;
+  background: var(--cf-bg);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  color: var(--cf-fg);
+  font:
+    12.5px system-ui,
+    sans-serif;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
 /* Dossier atteint avec Entrée : bref surlignage */
 [data-cf-flash] {
   animation: cf-flash 1.5s ease-out;

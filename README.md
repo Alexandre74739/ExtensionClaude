@@ -8,7 +8,7 @@ Extension de navigateur pour [claude.ai](https://claude.ai) qui affiche les **gr
 - Le contenu des conversations n'est jamais modifié, ni les titres de chats
 - Les dossiers restent des groupes Claude : ils sont enregistrés dans ton compte Claude et visibles partout (mobile, autres navigateurs). Les **couleurs** sont enregistrées par l'extension et synchronisées via le compte du navigateur : elles n'apparaissent qu'avec l'extension.
 
-- **Sous-dossiers** : ⋯ du dossier → **Placer dans le dossier…**, ou choix « Dans le dossier » à la création. Le sous-dossier s'affiche décalé sous son parent et se masque quand le parent est replié. Claude ne gère pas les sous-groupes : l'imbrication n'est visible qu'avec l'extension.
+- **Sous-dossiers** : glisser l'en-tête d'un dossier sur celui d'un autre (sur « Sans dossier » pour le remettre à la racine), ou ⋯ du dossier → **Placer dans le dossier…**, ou choix « Dans le dossier » à la création. Le sous-dossier s'affiche décalé sous son parent et se masque quand le parent est replié. Claude ne gère pas les sous-groupes : l'imbrication n'est visible qu'avec l'extension.
 - **Recherche** au-dessus des dossiers : filtre en direct les dossiers, sous-dossiers et chats (sans tenir compte des accents ni des majuscules).
 
 | Touche | Effet |
@@ -19,7 +19,7 @@ Extension de navigateur pour [claude.ai](https://claude.ai) qui affiche les **gr
 | `Entrée` | Ouvre le chat, ou affiche et ouvre le dossier (sans ouvrir de chat) |
 | `Échap` | Efface la recherche |
 
-La recherche ne voit que les chats chargés dans la barre latérale ; pour les plus anciens, le lien « Ouvrir la recherche de Claude » apparaît quand rien n'est trouvé.
+La recherche couvre aussi les chats que la barre latérale n'a pas chargés : la liste complète est récupérée via l'API interne de claude.ai (avec ta session, à la première utilisation de la recherche, puis gardée 5 minutes) et les résultats apparaissent dans « Chats plus anciens ». Cette API n'est pas documentée : si elle échoue, la recherche reste limitée aux chats chargés.
 
 Compatible Chrome, Edge, Brave et Firefox (121+). Manifest V3, aucune dépendance, pas d'étape de build.
 
