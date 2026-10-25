@@ -215,32 +215,74 @@
   opacity: 0.55;
 }
 
-/* Glisser un dossier sur un autre : en-tête visé et étiquette qui suit le pointeur */
-[data-cf-drop-target] {
-  border-radius: 8px;
-  outline: 2px dashed #d97757;
-  outline-offset: -2px;
-  background-color: rgba(217, 119, 87, 0.1) !important;
+/* ---------- glisser un dossier sur un autre (style du glisser de chats de Claude) ---------- */
+
+/* Pendant le glisser : curseur « main fermée », pas de sélection de texte */
+html.cf-grabbing,
+html.cf-grabbing * {
+  cursor: grabbing !important;
+  user-select: none !important;
 }
+
+/* Dossier visé : contour plein dans la couleur d'accent de Claude (son anneau de focus) */
+[data-cf-drop-target] {
+  border-radius: 10px;
+  outline: 1.5px solid var(--cds-fill-accent, #2c84db) !important;
+  outline-offset: -1.5px;
+  background-color: color-mix(
+    in srgb,
+    var(--cds-fill-accent, #2c84db) 6%,
+    transparent
+  ) !important;
+}
+
+/* Pastille du dossier glissé, qui suit librement le pointeur */
+.cf-drag-ghost {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 2147483646;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-sizing: border-box;
+  max-width: 220px;
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--cf-border);
+  border-radius: 10px;
+  background: var(--cf-bg);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  color: var(--cf-fg);
+  font-family: inherit;
+  font-size: 13px;
+  opacity: 0.96;
+  pointer-events: none;
+}
+.cf-drag-label {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Infobulle « Déplacer vers … » au coin du dossier visé */
 .cf-drop-tip {
   position: fixed;
   top: 0;
   left: 0;
   z-index: 2147483647;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  max-width: 260px;
-  padding: 5px 10px;
+  max-width: 240px;
+  overflow: hidden;
+  padding: 7px 12px;
   border: 1px solid var(--cf-border);
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--cf-bg);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
   color: var(--cf-fg);
-  font:
-    12.5px system-ui,
-    sans-serif;
+  font-family: inherit;
+  font-size: 13px;
   white-space: nowrap;
+  text-overflow: ellipsis;
   pointer-events: none;
 }
 

@@ -792,19 +792,24 @@ const ext = globalThis.browser ?? globalThis.chrome;
 
   // ---------- glisser un dossier sur un autre : il devient son sous-dossier ----------
 
-  // Observation passive des événements : le glisser de Claude (réordonner les dossiers)
-  // n'est pas bloqué, on regarde seulement où le dossier est lâché
+  // L'extension prend la main sur le glisser des en-têtes de dossiers : Claude ne doit pas
+  // réordonner (déplacer) les dossiers pendant qu'on vise celui où ranger le dossier glissé.
+  // Le style reprend celui du glisser de chats de Claude (contour d'accent, infobulle).
   const DRAG_THRESHOLD = 6;
+  const AUTO_SCROLL_EDGE = 48;
   const ROOT_SECTION = /^(sans dossier|sans groupe|ungrouped|no folder)$/i;
-  let folderDrag = null; // { group, x, y, active, html5, target }
+  let folderDrag = null; // { group, x, y, active, target }
   let dropHighlight = null;
+  const dragGhost = h("div", { class: "cf-drag-ghost", "aria-hidden": "true" });
   const dropTip = h("div", { class: "cf-drop-tip", role: "status" });
 
-  // Toute la ligne de l'en-tête (zone de dépôt la plus large possible)
+  // Ligne de l'en-tête (zone où commencer le glisser)
   const headerBox = (el) =>
     el.closest('[data-row-key^="label:"]') ||
     el.closest("[data-sidebar-group-label]") ||
     el;
+  // Section entière (en-tête et chats) : zone de dépôt, comme pour les chats chez Claude
+  const sectionBox = (el) => el.closest("[data-group-list]") || headerBox(el);
 
   function within(el, x, y) {
     const r = el.getBoundingClientRect();
@@ -813,17 +818,18 @@ const ext = globalThis.browser ?? globalThis.chrome;
     );
   }
 
-  // En-tête d'un autre dossier sous le pointeur, ou « Sans dossier » (= remettre à la racine)
+  // Dossier sous le pointeur (hors dossier glissé et ses sous-dossiers),
+  // ou « Sans dossier » pour remettre à la racine
   function folderDropTarget(x, y) {
     for (const g of currentGroups) {
-      if (g.key === folderDrag.group.key) continue;
-      const el = headerBox(g.row);
+      if (isInside(g.key, folderDrag.group.key)) continue;
+      const el = sectionBox(g.row);
       if (within(el, x, y)) return { group: g, el };
     }
     const root = lastLayout?.sections.find(
       (s) => !s.group && ROOT_SECTION.test(s.label),
     );
-    const el = root && headerBox(root.header.el);
+    const el = root && sectionBox(root.header.el);
     return el && within(el, x, y) ? { group: null, el } : null;
   }
 
@@ -839,28 +845,59 @@ const ext = globalThis.browser ?? globalThis.chrome;
     dropHighlight = el;
   }
 
+  // Fait défiler la barre latérale quand le pointeur approche de son bord
+  function autoScroll(y) {
+    const scroller = folderDrag.group.row.closest(
+      ".dframe-nav-scroll, [data-perf-region='sidebar']",
+    );
+    if (!scroller) return;
+    const r = scroller.getBoundingClientRect();
+    if (y < r.top + AUTO_SCROLL_EDGE) scroller.scrollBy(0, -12);
+    else if (y > r.bottom - AUTO_SCROLL_EDGE) scroller.scrollBy(0, 12);
+  }
+
+  function startFolderDrag() {
+    const { group } = folderDrag;
+    folderDrag.active = true;
+    getSelection()?.removeAllRanges();
+    document.documentElement.classList.add("cf-grabbing");
+    // Petite pastille (icône + nom) qui suit librement le pointeur sur tout l'écran
+    dragGhost.className = `cf-drag-ghost ${themeClass()}`;
+    dragGhost.replaceChildren(
+      folderIcon("cf-hint-icon", colors[group.key] || NO_COLOR),
+      h("span", { class: "cf-drag-label", text: group.name }),
+    );
+    document.body.append(dragGhost);
+  }
+
   function moveFolderDrag(x, y) {
-    if (!folderDrag) return;
     if (!folderDrag.active) {
       if (Math.hypot(x - folderDrag.x, y - folderDrag.y) < DRAG_THRESHOLD)
         return;
-      folderDrag.active = true;
+      startFolderDrag();
     }
+    dragGhost.style.transform = `translate(${x + 14}px, ${y + 12}px)`;
+    autoScroll(y);
+
     const target = folderDropTarget(x, y);
     folderDrag.target =
       target && canDropOn(folderDrag.group, target.group) ? target : null;
     setDropHighlight(folderDrag.target?.el || null);
     if (!folderDrag.target) return dropTip.remove();
+
+    // Infobulle au coin haut-droit du dossier visé, comme « Déplacer vers … » chez Claude
+    const { group, el } = folderDrag.target;
     dropTip.className = `cf-drop-tip ${themeClass()}`;
-    const { group } = folderDrag.target;
-    if (group)
-      dropTip.replaceChildren(
-        folderIcon("cf-hint-icon", colors[group.key] || NO_COLOR),
-        `Placer dans « ${group.name} »`,
-      );
-    else dropTip.replaceChildren("Sortir du dossier");
-    dropTip.style.transform = `translate(${x + 14}px, ${y + 14}px)`;
+    dropTip.textContent = group
+      ? `Déplacer vers ${group.name}`
+      : "Sortir du dossier";
     if (!dropTip.isConnected) document.body.append(dropTip);
+    const r = el.getBoundingClientRect();
+    const left = Math.min(
+      r.right - dropTip.offsetWidth + 24,
+      innerWidth - dropTip.offsetWidth - 8,
+    );
+    dropTip.style.transform = `translate(${Math.max(8, left)}px, ${r.top + 12}px)`;
   }
 
   function endFolderDrag(drop) {
@@ -868,6 +905,8 @@ const ext = globalThis.browser ?? globalThis.chrome;
     folderDrag = null;
     setDropHighlight(null);
     dropTip.remove();
+    dragGhost.remove();
+    document.documentElement.classList.remove("cf-grabbing");
     if (!drop || !drag?.active || !drag.target) return;
     const parent = drag.target.group?.key ?? null;
     if (setParent(drag.group.key, parent))
@@ -879,55 +918,84 @@ const ext = globalThis.browser ?? globalThis.chrome;
       );
   }
 
-  addEventListener(
-    "pointerdown",
-    (e) => {
-      folderDrag = null;
-      if (e.button !== 0 || !(e.target instanceof Element)) return;
-      if (e.target.closest(".cf-group-icon, [aria-haspopup], #cf-search"))
-        return;
-      const group = currentGroups.find((g) =>
-        headerBox(g.row).contains(e.target),
-      );
-      if (group)
+  // Appui sur l'en-tête d'un dossier (hors icône de couleur, bouton ⋯ et recherche)
+  function folderPressedAt(e) {
+    if (e.button !== 0 || e.pointerType === "touch") return null;
+    if (!(e.target instanceof Element)) return null;
+    if (e.target.closest(".cf-group-icon, [aria-haspopup], #cf-search"))
+      return null;
+    return (
+      currentGroups.find((g) => headerBox(g.row).contains(e.target)) || null
+    );
+  }
+
+  // Les événements passent par gate.js, chargé avant Claude : renvoyer true les lui cache.
+  // Claude ne voit donc ni l'appui ni les mouvements sur un en-tête de dossier, et son
+  // propre glisser (qui déplace les dossiers) ne démarre jamais. Le clic (replier) reste à lui.
+  let suppressClick = false;
+  function gate(e) {
+    switch (e.type) {
+      case "pointerdown": {
+        folderDrag = null;
+        const group = folderPressedAt(e);
+        if (!group) return false;
         folderDrag = {
           group,
           x: e.clientX,
           y: e.clientY,
           active: false,
-          html5: false,
           target: null,
         };
-    },
-    true,
-  );
-  addEventListener(
-    "pointermove",
-    (e) => moveFolderDrag(e.clientX, e.clientY),
-    true,
-  );
-  // Si Claude utilise le glisser HTML5, les événements pointeur s'arrêtent : on suit dragover
-  addEventListener(
-    "dragstart",
-    () => folderDrag && (folderDrag.html5 = true),
-    true,
-  );
-  addEventListener(
-    "dragover",
-    (e) => moveFolderDrag(e.clientX, e.clientY),
-    true,
-  );
-  addEventListener(
-    "pointerup",
-    () => folderDrag && !folderDrag.html5 && endFolderDrag(true),
-    true,
-  );
-  addEventListener("dragend", () => folderDrag && endFolderDrag(true), true);
-  addEventListener(
-    "pointercancel",
-    () => folderDrag && !folderDrag.html5 && endFolderDrag(false),
-    true,
-  );
+        return true;
+      }
+      case "mousedown":
+      case "mousemove":
+      case "dragstart":
+        if (folderDrag && e.type === "dragstart") e.preventDefault();
+        return !!folderDrag;
+      case "pointermove":
+        if (!folderDrag) return false;
+        moveFolderDrag(e.clientX, e.clientY);
+        return true;
+      case "pointerup":
+        if (!folderDrag) return false;
+        // Après un glisser, le clic qui suit ne doit pas replier un dossier
+        suppressClick = folderDrag.active;
+        endFolderDrag(true);
+        setTimeout(() => (suppressClick = false), 0);
+        return true;
+      case "pointercancel":
+        if (folderDrag) endFolderDrag(false);
+        return false;
+      case "click":
+        if (!suppressClick) return false;
+        suppressClick = false;
+        e.preventDefault();
+        return true;
+    }
+    return false;
+  }
+
+  // Repli si gate.js n'a pas été chargé : écouteurs posés maintenant (moins prioritaires)
+  if (!globalThis.cfGate) {
+    globalThis.cfGate = { handle: null };
+    for (const type of [
+      "pointerdown",
+      "pointermove",
+      "pointerup",
+      "pointercancel",
+      "mousedown",
+      "mousemove",
+      "click",
+      "dragstart",
+    ])
+      addEventListener(
+        type,
+        (e) => globalThis.cfGate.handle?.(e) && e.stopImmediatePropagation(),
+        true,
+      );
+  }
+  globalThis.cfGate.handle = gate;
   addEventListener(
     "keydown",
     (e) => e.key === "Escape" && folderDrag && endFolderDrag(false),

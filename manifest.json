@@ -12,6 +12,11 @@
   "content_scripts": [
     {
       "matches": ["https://claude.ai/*"],
+      "js": ["src/gate.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["https://claude.ai/*"],
       "js": ["src/content.js"],
       "css": ["src/content.css"],
       "run_at": "document_idle"
