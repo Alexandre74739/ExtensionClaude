@@ -21,7 +21,7 @@ Extension de navigateur pour [claude.ai](https://claude.ai) qui affiche les **gr
 
 La recherche couvre aussi les chats que la barre latérale n'a pas chargés : la liste complète est récupérée via l'API interne de claude.ai (avec ta session, à la première utilisation de la recherche, puis gardée 5 minutes) et les résultats apparaissent dans « Chats plus anciens ». Cette API n'est pas documentée : si elle échoue, la recherche reste limitée aux chats chargés.
 
-Compatible Chrome, Edge, Brave et Firefox (121+). Manifest V3, aucune dépendance, pas d'étape de build.
+Compatible Chrome, Edge, Brave et Firefox (140+). Manifest V3, aucune dépendance, pas d'étape de build.
 
 ## Installation
 

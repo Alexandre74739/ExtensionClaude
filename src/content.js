@@ -22,11 +22,11 @@ const ext = globalThis.browser ?? globalThis.chrome;
   const INDENT_PX = 26;
   const CHAT_LINK = 'a[href*="/chat/"]';
   const FOLDER_SVG =
-    '<svg viewBox="0 0 24 24" width="100%" height="100%" aria-hidden="true"><path fill="currentColor" d="M2 6.5A2.5 2.5 0 0 1 4.5 4h4.4a2 2 0 0 1 1.4.6L12 6.3h7.5A2.5 2.5 0 0 1 22 8.8v8.7a2.5 2.5 0 0 1-2.5 2.5h-15A2.5 2.5 0 0 1 2 17.5z"/></svg>';
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="100%" height="100%" aria-hidden="true"><path fill="currentColor" d="M2 6.5A2.5 2.5 0 0 1 4.5 4h4.4a2 2 0 0 1 1.4.6L12 6.3h7.5A2.5 2.5 0 0 1 22 8.8v8.7a2.5 2.5 0 0 1-2.5 2.5h-15A2.5 2.5 0 0 1 2 17.5z"/></svg>';
   const CHAT_SVG =
-    '<svg viewBox="0 0 16 16" width="100%" height="100%" aria-hidden="true"><path d="M3 3.5h10a1 1 0 0 1 1 1V10a1 1 0 0 1-1 1H7l-3 2.5V11H3a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>';
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="100%" height="100%" aria-hidden="true"><path d="M3 3.5h10a1 1 0 0 1 1 1V10a1 1 0 0 1-1 1H7l-3 2.5V11H3a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>';
   const SEARCH_SVG =
-    '<svg viewBox="0 0 16 16" width="100%" height="100%" aria-hidden="true"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 10.5 14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="100%" height="100%" aria-hidden="true"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 10.5 14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
 
   let dialogEl = null;
   let renameCount = 0;
@@ -47,13 +47,20 @@ const ext = globalThis.browser ?? globalThis.chrome;
     return node;
   }
 
+  // Les icônes (constantes du code) sont analysées une fois puis clonées :
+  // pas d'innerHTML, que la vérification de Mozilla signale
+  const parsedIcons = new Map();
   function svgIcon(cls, svg, color = null) {
-    const span = h("span", {
-      class: cls,
-      style: color ? `color:${color}` : null,
-    });
-    span.innerHTML = svg;
-    return span;
+    if (!parsedIcons.has(svg))
+      parsedIcons.set(
+        svg,
+        new DOMParser().parseFromString(svg, "image/svg+xml").documentElement,
+      );
+    return h(
+      "span",
+      { class: cls, style: color ? `color:${color}` : null },
+      document.importNode(parsedIcons.get(svg), true),
+    );
   }
   const folderIcon = (cls, color) => svgIcon(cls, FOLDER_SVG, color);
 
